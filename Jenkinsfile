@@ -1,8 +1,8 @@
-properties([
-    parameters([
-        string(name: 'IMAGE_TAG', defaultValue: 'latest', description: 'Docker image tag')
-    ])
-])
+// properties([
+//     parameters([
+//         string(name: 'IMAGE_TAG', defaultValue: 'latest', description: 'Docker image tag')
+//     ])
+// ])
 
 def branch = env.BRANCH_NAME
 def build = env.BUILD_NUMBER
@@ -30,10 +30,36 @@ podTemplate(containers: [
             }
         }
 
+        stage('calc-version') {
+            container('deployer') {
+                script {
+                    def currentVersion = sh(
+                        script: """#!/bin/bash
+                            TOKEN=\$(curl -s "https://auth.docker.io/token?service=registry.docker.io&scope=repository:${appimage}:pull" | jq -r .token)
+                            DIGEST=\$(curl -s -H "Authorization: Bearer \$TOKEN" -H "Accept: application/vnd.docker.distribution.manifest.v2+json" "https://registry-1.docker.io/v2/${appimage}/manifests/latest" | jq -r '.config.digest // empty')
+                            if [ -z "\$DIGEST" ]; then
+                                echo "1"
+                            else
+                                CURRENT=\$(curl -s -H "Authorization: Bearer \$TOKEN" -H "Accept: application/vnd.docker.container.image.v1+json" "https://registry-1.docker.io/v2/${appimage}/blobs/\$DIGEST" | jq -r '.config.Labels.VERSION // empty')
+                                if [ -z "\$CURRENT" ]; then
+                                    echo "1"
+                                else
+                                    echo \$((\$CURRENT + 1))
+                                fi
+                            fi
+                        """,
+                        returnStdout: true
+                    ).trim()
+                    env.VERSION = currentVersion
+                }
+                echo "Next VERSION: ${env.VERSION}"
+            }
+        }
+
         stage('build') {
             container('docker') {
-                echo "Building docker image with Kaniko..."
-                sh "/kaniko/executor --force --context=dir://${env.WORKSPACE} --destination=${appimage}:${apptag} --destination=${appimage}:latest"
+                echo "Building with VERSION=${env.VERSION}"
+                sh "/kaniko/executor --force --context=dir://${env.WORKSPACE} --build-arg VERSION=${env.VERSION} --destination=${appimage}:${apptag} --destination=${appimage}:latest"
             }
         }
 
