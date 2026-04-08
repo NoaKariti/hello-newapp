@@ -1,7 +1,7 @@
 FROM alpine:3.19
 
-LABEL MAINTAINER="Eyal@levys.co.il"
-LABEL GITHUB="https://github.com/elevy99927/"
+LABEL MAINTAINER="Eyal@levys.co.il" \
+     GITHUB="https://github.com/elevy99927/"
 
 ARG KUBECTL_VERSION=v1.34.1
 ARG HELM_VERSION=v3.16.4
