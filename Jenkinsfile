@@ -27,7 +27,7 @@ podTemplate(containers: [
         stage('build') {
             container('docker') {
                 echo "Building docker image with Kaniko..."
-                sh "/kaniko/executor --force --context=dir://${env.WORKSPACE} --destination=${appimage}:${apptag}"
+                sh "/kaniko/executor --force --context=dir://${env.WORKSPACE} --destination=${appimage}:${apptag} --destination=${appimage}:latest"
             }
         }
 
