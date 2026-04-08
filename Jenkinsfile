@@ -1,6 +1,6 @@
 def branch = env.BRANCH_NAME
 def build = env.BUILD_NUMBER
-def appname = "deployer"
+def appname = "k8s-deployer"
 def artifactory = "docker.io" 
 def repo = "elevy99927" 
 def appimage = "${repo}/${appname}"
