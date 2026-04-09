@@ -24,3 +24,4 @@ serviceMonitor:
     app: monitoring
   interval: "30s"
   path: "/metrics"
+  port: http
