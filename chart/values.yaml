@@ -20,7 +20,7 @@ pod:
 serviceMonitor:
   enabled: true
   labels:
-    release: kube-prometheus-stack
+    release: prometheus-k8s-qa
     app: monitoring
   interval: "30s"
   path: "/metrics"
