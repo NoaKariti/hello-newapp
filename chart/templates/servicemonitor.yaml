@@ -10,7 +10,7 @@ spec:
     matchLabels:
       app: {{ .Release.Name }}
   endpoints:
-    - port: "{{ .Values.pod.target_port | default 8000}}"
+    - port: "{{ .Values.pod.port | default 80}}"
       interval: {{ .Values.serviceMonitor.interval | default "30s" }}
       path: {{ .Values.serviceMonitor.path | default "/metrics" }}
 {{- end }}
