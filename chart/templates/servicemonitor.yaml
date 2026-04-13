@@ -4,6 +4,7 @@ kind: ServiceMonitor
 metadata:
   name: {{ .Release.Name }}
   labels:
+    app: {{ .Release.Name }}
     {{- toYaml .Values.serviceMonitor.labels | nindent 4 }}
 spec:
   selector:
