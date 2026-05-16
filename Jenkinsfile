@@ -1,27 +1,127 @@
-def appname = "hello-newapp"
-def repo = "elevy99927"  // Replace with your DockerHub username
-def appimage = "${repo}/${appname}"
-def apptag = "${env.BUILD_NUMBER}"
+/*
+    Shared Library reference:
+    https://github.com/elevy99927/my-shared-library/tree/solution
 
-podTemplate(containers: [
-      containerTemplate(name: 'jnlp', image: 'jenkins/inbound-agent', ttyEnabled: true),
-      containerTemplate(name: 'docker', image: 'gcr.io/kaniko-project/executor:v1.23.0-debug', command: '/busybox/cat', ttyEnabled: true)
-  ])
-  {
-    node(POD_LABEL) {
-        stage('chackout') {
-            container('jnlp') {
-            sh '/usr/bin/git config --global http.sslVerify false'
-	    checkout scm
-          }
+ * 1. Go to Jenkins Dashboard > Manage Jenkins > System.
+ * 2. Scroll down to the "Global Pipeline Libraries" section.
+ * 3. Add a new library:
+ *    - Name: Give it a name (e.g., my-shared-library).
+ *    - Default version: Specify a branch or tag.
+ *    - Retrieval method: Choose "Modern SCM" and select Git.
+ *    - Project Repository: Provide the repository URL.
+ * 4. In SonarQube - add user token: My Account > Security > Generate Token.
+ * 5. In Jenkins - install the SonarQube Scanner plugin.
+ * 6. In Jenkins > Credentials > add credential "Secret text" with name "sonarqube-token".
+ * 7. In Jenkins > Manage Jenkins > System > SonarQube installations - configure SonarQube server.
+ * 8. In Jenkins > Manage Jenkins > Tools > SonarQube Scanner installations - configure the scanner.
+
+*/
+
+@Library('my-shared-library') _
+
+pipeline {
+    agent any
+    environment {
+        IMAGEREPO = "elevy99927/helloworld"
+        IMAGETAG = "1"
+        HELMCHART = 'helmchart'
+        APP_ENV = 'production'
+        APP_DEBUG = 'false'
+    	GITREPO = 'github.com/elevy99927/jenkins-with-gitlab.git'
+    }
+    stages {
+        stage('Chekout') {
+            steps {
+	    	    echo 'Pull SCM...'
+	    		checkout scm
+          	}
         } // end chackout
+        stage('Parallel Tests') {
+            parallel {
+                stage('build') {
+                    steps {
+                         script {
+                            imageBuild.dockerBuild("${env.IMAGEREPO}","${env.IMAGETAG}")
+                	        echo "Building Volt app in environment: ${env.APP_ENV}"
+                	        echo "Debug mode is set to: ${env.APP_DEBUG}"
+                            echo 'build image'
+                         }
+                    }
+                } //build
+                stage('trivy test') {
+                    steps {
+                        script {
+                           securityScan.trivyLocalScan() 
+                           echo 'trivy test'
+                        }                     
+                    }
+                } //trivy test
+                stage('bandit test') {
+                    steps {
+                        script {
+                           securityScan.banditLocalScan()
+                           echo 'bandit test'
+                        }
 
-        stage('Hello') {
-            container('docker') {
-              echo "Building docker image..."
-              sh "echo docker push $appimage"
+
+                    }
+                } //bandit test
+                stage('sonarqube') {
+                    steps {
+                        script {
+                            codeQuality.sonarCreateProject(env.JOB_NAME)
+                            codeQuality.sonarLocalScan()
+                            echo 'sonarqube'
+                        }
+                    }
+                } //sonarqube
             }
-        } //end hello
+        }
+
+        stage('Parallel 2') {
+            parallel {
+                stage('docker push') {
+                    steps {
+                        script {
+                            imageBuild.dockerPush("${env.IMAGEREPO}", "${env.IMAGETAG}")
+                        }
+                    }
+                } //docker push 
+                stage('helm lint') {
+                    steps {
+                        script {
+                            unitTest.runTests()
+                        }
+                    }
+                } //helm lint
+            }
+        }
+        stage('Deploy') {
+            steps {
+                script {
+                    k8sUtils.helmDeploy(env.HELMCHART, env.APP_ENV,env.IMAGEREPO,env.IMAGETAG)
+                }
+            }
+        } //Deploy
+        stage('Test') {
+            steps {
+                script {
+                    qaTest.newmanLocalTest("my_collection.json")
+                }
+            }
+        } //Test
+    }
+    post {
+        always {
+            echo 'Cleaning up workspace...'
+            sh "pwd"
+            sh "ls -la"
+            sh "rm -f -r *"
+            echo 'Sending email...'
+        }
     }
 }
+
+
+
 
