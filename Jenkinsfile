@@ -23,7 +23,7 @@ pipeline {
     agent any
     environment {
         IMAGEREPO = "elevy99927/helloworld"
-        IMAGETAG = "1"
+        IMAGETAG =  "${env.BUILD_NUMBER}"
         HELMCHART = 'helmchart'
         APP_ENV = 'production'
         APP_DEBUG = 'false'
