@@ -2,6 +2,9 @@ name: build-k8s-deployer
 
 on:
   workflow_dispatch:
+  push:
+     branches:
+       - k8s-deployer
 
 env:
   APP_NAME: k8s-deployer
