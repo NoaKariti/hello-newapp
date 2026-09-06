@@ -48,8 +48,13 @@ podTemplate(containers: [
         stage('deploy') {
             container('kubectl') {
               echo "Deploying to Kubernetes..."
-              sh 'env | grep KUBERNETES || true'
-              sh 'kubectl cluster-info --request-timeout=5s || true'
+              sh '''
+                kubectl config set-cluster in-cluster --server=https://kubernetes.default.svc --certificate-authority=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+                kubectl config set-credentials in-cluster --token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+                kubectl config set-context in-cluster --cluster=in-cluster --user=in-cluster --namespace=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
+                kubectl config use-context in-cluster
+              '''
+              sh 'kubectl cluster-info --request-timeout=5s'
               sh "sed 's|IMAGE_PLACEHOLDER|${appimage}:${apptag}|' k8s/deployment.yaml | kubectl apply -f - --request-timeout=10s"
             }
         } //end deploy
