@@ -7,7 +7,8 @@ podTemplate(containers: [
       containerTemplate(name: 'jnlp', image: 'jenkins/inbound-agent', ttyEnabled: true),
       containerTemplate(name: 'docker', image: 'docker:dind', ttyEnabled: true, privileged: true),
       containerTemplate(name: 'trivy', image: 'aquasec/trivy:latest', command: 'cat', ttyEnabled: true),
-      containerTemplate(name: 'kubectl', image: 'alpine/k8s:1.30.2', command: 'cat', ttyEnabled: true)
+      containerTemplate(name: 'kubectl', image: 'alpine/k8s:1.30.2', command: 'cat', ttyEnabled: true),
+      containerTemplate(name: 'helm', image: 'alpine/helm:3.14.0', command: 'cat', ttyEnabled: true)
   ])
   {
     node(POD_LABEL) {
@@ -45,6 +46,12 @@ podTemplate(containers: [
               }
             }
         } //end push
+        stage('Deploy') {
+            container('helm') {
+              echo "Deploying with Helm..."
+              sh "echo helm template hello-newapp ./chart > hello-newapp.yaml"
+            }
+        } //end Deploy
         stage('deploy') {
             container('kubectl') {
               echo "Deploying to Kubernetes..."
