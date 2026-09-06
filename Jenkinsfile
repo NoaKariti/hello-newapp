@@ -36,10 +36,6 @@ podTemplate(containers: [
                 }
             )
         } //end build
-        // Requires the "Docker Pipeline" plugin (docker-workflow) for docker.build/docker.withRegistry.
-        // Credentials: Manage Jenkins > Credentials > (global) > Add Credentials
-        //   Kind: "Username with password", ID: dockerhub-creds, Username: Docker Hub username,
-        //   Password: a Docker Hub Access Token (Account Settings > Security > Access Tokens), not your account password.
         stage('push') {
             container('docker') {
               script {
@@ -52,6 +48,10 @@ podTemplate(containers: [
         stage('deploy') {
             container('kubectl') {
               echo "Deploying to Kubernetes..."
+              timeout(time: 30, unit: 'SECONDS') {
+                sh 'kubectl cluster-info'
+                sh 'kubectl auth can-i create deployments -n default'
+              }
               sh "sed 's|IMAGE_PLACEHOLDER|${appimage}:${apptag}|' k8s/deployment.yaml | kubectl apply -f -"
             }
         } //end deploy
