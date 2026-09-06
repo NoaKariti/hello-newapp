@@ -48,8 +48,10 @@ podTemplate(containers: [
         } //end push
         stage('Deploy') {
             container('helm') {
-              echo "Deploying with Helm..."
-              sh "echo helm template hello-newapp ./chart > hello-newapp.yaml"
+              echo "Rendering Helm template..."
+              sh "helm template hello-newapp ./chart --set image.repository=${appimage} --set image.tag=${apptag} > hello-newapp.yaml"
+              sh 'cat hello-newapp.yaml'
+              archiveArtifacts artifacts: 'hello-newapp.yaml', fingerprint: true
             }
         } //end Deploy
         stage('deploy') {
