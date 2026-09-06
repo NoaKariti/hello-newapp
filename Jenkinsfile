@@ -1,6 +1,6 @@
 def appname = "hello-newapp"
-def repo = "noakariti"  // your GitHub username, lowercase (image names must be lowercase)
-def appimage = "ghcr.io/${repo}/${appname}"
+def repo = "noakariti"
+def appimage = "${repo}/${appname}"
 def apptag = "${env.BUILD_NUMBER}"
 def dockerImage
 podTemplate(containers: [
@@ -35,12 +35,12 @@ podTemplate(containers: [
         } //end build
         // Requires the "Docker Pipeline" plugin (docker-workflow) for docker.build/docker.withRegistry.
         // Credentials: Manage Jenkins > Credentials > (global) > Add Credentials
-        //   Kind: "Username with password", ID: ghcr-creds, Username: your GitHub username,
-        //   Password: a GitHub Personal Access Token (classic) with "write:packages" scope.
+        //   Kind: "Username with password", ID: dockerhub-creds, Username: Docker Hub username,
+        //   Password: a Docker Hub Access Token (Account Settings > Security > Access Tokens), not your account password.
         stage('push') {
             container('docker') {
               script {
-                docker.withRegistry('https://ghcr.io', 'ghcr-creds') {
+                docker.withRegistry('https://registry.hub.docker.com', 'dockerhub-creds') {
                   dockerImage.push()
                 }
               }
