@@ -63,7 +63,6 @@ podTemplate(containers: [
                 kubectl config set-context in-cluster --cluster=in-cluster --user=in-cluster --namespace=$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)
                 kubectl config use-context in-cluster
               '''
-              sh 'kubectl cluster-info --request-timeout=5s'
               sh "sed 's|IMAGE_PLACEHOLDER|${appimage}:${apptag}|' k8s/deployment.yaml | kubectl apply -f - --request-timeout=10s"
             }
         } //end deploy
