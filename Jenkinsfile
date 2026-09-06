@@ -48,11 +48,10 @@ podTemplate(containers: [
         stage('deploy') {
             container('kubectl') {
               echo "Deploying to Kubernetes..."
-              timeout(time: 30, unit: 'SECONDS') {
-                sh 'kubectl cluster-info'
-                sh 'kubectl auth can-i create deployments -n default'
-              }
-              sh "sed 's|IMAGE_PLACEHOLDER|${appimage}:${apptag}|' k8s/deployment.yaml | kubectl apply -f -"
+              sh 'env | grep KUBERNETES || true'
+              sh 'ls -la /var/run/secrets/kubernetes.io/serviceaccount/ || true'
+              sh 'kubectl cluster-info --request-timeout=5s || true'
+              sh "sed 's|IMAGE_PLACEHOLDER|${appimage}:${apptag}|' k8s/deployment.yaml | kubectl apply -f - --request-timeout=10s"
             }
         } //end deploy
     }
