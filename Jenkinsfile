@@ -7,7 +7,7 @@ podTemplate(containers: [
       containerTemplate(name: 'jnlp', image: 'jenkins/inbound-agent', ttyEnabled: true),
       containerTemplate(name: 'docker', image: 'docker:dind', ttyEnabled: true, privileged: true),
       containerTemplate(name: 'trivy', image: 'aquasec/trivy:latest', command: 'cat', ttyEnabled: true),
-      containerTemplate(name: 'kubectl', image: 'bitnami/kubectl:latest', command: 'cat', ttyEnabled: true)
+      containerTemplate(name: 'kubectl', image: 'alpine/k8s:1.30.2', command: 'cat', ttyEnabled: true)
   ])
   {
     node(POD_LABEL) {
@@ -49,7 +49,6 @@ podTemplate(containers: [
             container('kubectl') {
               echo "Deploying to Kubernetes..."
               sh 'env | grep KUBERNETES || true'
-              sh 'ls -la /var/run/secrets/kubernetes.io/serviceaccount/ || true'
               sh 'kubectl cluster-info --request-timeout=5s || true'
               sh "sed 's|IMAGE_PLACEHOLDER|${appimage}:${apptag}|' k8s/deployment.yaml | kubectl apply -f - --request-timeout=10s"
             }
