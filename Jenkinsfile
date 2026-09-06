@@ -5,7 +5,9 @@ def apptag = "${env.BUILD_NUMBER}"
 def dockerImage
 podTemplate(containers: [
       containerTemplate(name: 'jnlp', image: 'jenkins/inbound-agent', ttyEnabled: true),
-      containerTemplate(name: 'docker', image: 'docker:dind', ttyEnabled: true, privileged: true)
+      containerTemplate(name: 'docker', image: 'docker:dind', ttyEnabled: true, privileged: true),
+      containerTemplate(name: 'trivy', image: 'aquasec/trivy:latest', command: 'cat', ttyEnabled: true),
+      containerTemplate(name: 'kubectl', image: 'bitnami/kubectl:latest', command: 'cat', ttyEnabled: true)
   ])
   {
     node(POD_LABEL) {
@@ -27,8 +29,9 @@ podTemplate(containers: [
                     }
                 },
                 'Security Scan': {
-                    container('docker') {
-                      echo "Security Scanning..."
+                    container('trivy') {
+                      echo "Security Scanning with Trivy..."
+                      sh 'trivy fs --exit-code 0 --severity HIGH,CRITICAL .'
                     }
                 }
             )
@@ -46,5 +49,11 @@ podTemplate(containers: [
               }
             }
         } //end push
+        stage('deploy') {
+            container('kubectl') {
+              echo "Deploying to Kubernetes..."
+              sh "sed 's|IMAGE_PLACEHOLDER|${appimage}:${apptag}|' k8s/deployment.yaml | kubectl apply -f -"
+            }
+        } //end deploy
     }
 }
